@@ -11,6 +11,15 @@ router.post(
   controller.AddUser
 )
 router.post('/set-password', controller.SetPassword)
+router.post('/reset-password', controller.ResetPassword)
+router.post('/activate-account', controller.ActivateAccount)
+router.post(
+  '/generate-reset-token/:userId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.GenerateResetToken
+)
 router.get(
   '/session',
   middleware.stripToken,

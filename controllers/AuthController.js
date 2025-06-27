@@ -8,9 +8,10 @@ const jwt = require('jsonwebtoken')
 const AddUser = async (req, res) => {
   try {
     const { email, name, role } = req.body
+    const currentUser = res.locals.payload
 
     // Only admin or supervisor can add users
-    if (!['admin', 'supervisor'].includes(req.user.role)) {
+    if (!['admin', 'supervisor'].includes(currentUser.role)) {
       return res.status(403).json({ status: 'Error', msg: 'Access denied.' })
     }
 
@@ -112,8 +113,8 @@ const Login = async (req, res) => {
 // Check session
 const CheckSession = async (req, res) => {
   try {
-    // payload is set by verifyToken middleware in res.locals.payload
-    const { payload } = res.locals
+    // res.locals.payload is set by verifyToken middleware
+    const payload = res.locals.payload
     if (!payload) {
       return res.status(401).json({ status: 'Error', msg: 'Not authenticated.' })
     }
@@ -127,7 +128,7 @@ const CheckSession = async (req, res) => {
 // Update password (for logged-in user)
 const UpdatePassword = async (req, res) => {
   try {
-    const userId = req.user.id
+    const userId = res.locals.payload.id
     const { oldPassword, newPassword } = req.body
     const user = await User.findById(userId)
     if (!user) {
@@ -147,10 +148,139 @@ const UpdatePassword = async (req, res) => {
   }
 }
 
+// Generate reset token for existing user (by admin or supervisor)
+const GenerateResetToken = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const currentUser = res.locals.payload
+
+    // Only admin or supervisor can generate reset tokens
+    if (!['admin', 'supervisor'].includes(currentUser.role)) {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied.' })
+    }
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ status: 'Error', msg: 'User not found.' })
+    }
+
+    // Generate new reset token
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    const resetTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    user.resetToken = resetToken
+    user.resetTokenExpires = resetTokenExpires
+    await user.save()
+
+    // TODO: Send email to user with resetToken link for password reset
+
+    res.json({
+      status: 'Success',
+      msg: 'Reset token generated successfully.',
+      resetToken: resetToken,
+      expiresAt: resetTokenExpires
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Reset token generation failed.' })
+  }
+}
+
+// Reset password using token (for existing users)
+const ResetPassword = async (req, res) => {
+  try {
+    const { resetToken, password } = req.body
+
+    if (!resetToken || !password) {
+      return res.status(400).json({ status: 'Error', msg: 'Token and password are required.' })
+    }
+
+    const user = await User.findOne({
+      resetToken,
+      resetTokenExpires: { $gt: new Date() }
+    })
+
+    if (!user) {
+      return res.status(400).json({ status: 'Error', msg: 'Invalid or expired token.' })
+    }
+
+    const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10
+    user.passwordDigest = await bcrypt.hash(password, saltRounds)
+    user.resetToken = undefined
+    user.resetTokenExpires = undefined
+    await user.save()
+
+    res.json({ status: 'Success', msg: 'Password has been reset successfully.' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Password reset failed.' })
+  }
+}
+
+// Activate account and set password for first time
+const ActivateAccount = async (req, res) => {
+  try {
+    const { resetToken, password } = req.body
+
+    console.log('Activation attempt with token:', resetToken ? resetToken.substring(0, 8) + '...' : 'No token')
+
+    if (!resetToken || !password) {
+      return res.status(400).json({ status: 'Error', msg: 'Activation token and password are required.' })
+    }
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetToken,
+      resetTokenExpires: { $gt: new Date() }
+    })
+
+    if (!user) {
+      console.log('No user found with token or token expired')
+      return res.status(400).json({ status: 'Error', msg: 'Invalid or expired activation token.' })
+    }
+
+    console.log('User found for activation:', { id: user.id, email: user.email, status: user.accountStatus })
+
+    // Check if account is already activated
+    if (user.accountStatus === 'active') {
+      console.log('Account already activated')
+      return res.status(409).json({ status: 'Error', msg: 'Account is already activated.' })
+    }
+
+    // Hash password and activate account
+    const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10
+    user.passwordDigest = await bcrypt.hash(password, saltRounds)
+    user.accountStatus = 'active' // Activate the account
+    user.resetToken = undefined
+    user.resetTokenExpires = undefined
+    await user.save()
+
+    console.log('Account activated successfully for user:', user.email)
+
+    res.json({
+      status: 'Success',
+      msg: 'Account activated successfully! You can now log in.',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        accountStatus: user.accountStatus
+      }
+    })
+  } catch (error) {
+    console.error('Error activating account:', error)
+    res.status(500).json({ status: 'Error', msg: 'Account activation failed.' })
+  }
+}
+
 module.exports = {
   Login,
   AddUser,
   SetPassword,
   CheckSession,
-  UpdatePassword
+  UpdatePassword,
+  GenerateResetToken,
+  ResetPassword,
+  ActivateAccount
 }

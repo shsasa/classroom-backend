@@ -20,6 +20,15 @@ router.get(
   controller.GetUserById
 )
 
+// Get user's reset token
+router.get(
+  '/:id/reset-token',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.GetUserResetToken
+)
+
 // Update user
 router.put(
   '/:id',

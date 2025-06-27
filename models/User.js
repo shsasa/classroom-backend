@@ -13,7 +13,7 @@ const userSchema = new Schema(
     },
     accountStatus: {
       type: String,
-      enum: ['pending', 'active'],
+      enum: ['pending', 'active', 'inactive'],
       default: 'pending'
     },
     resetToken: { type: String },

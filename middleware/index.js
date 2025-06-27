@@ -16,7 +16,7 @@ const hashPassword = async (password) => {
     if (!password || typeof password !== 'string') {
       throw new Error('Valid password is required')
     }
-    
+
     let hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
     return hashedPassword
   } catch (error) {
@@ -30,7 +30,7 @@ const comparePassword = async (password, storedPassword) => {
     if (!password || !storedPassword) {
       throw new Error('Password and stored password are required')
     }
-    
+
     let passwordMatch = await bcrypt.compare(password, storedPassword)
     return passwordMatch
   } catch (error) {
@@ -44,8 +44,8 @@ const createToken = (payload) => {
     if (!payload || typeof payload !== 'object') {
       throw new Error('Valid payload is required')
     }
-    
-    let token = jwt.sign(payload, APP_SECRET, { 
+
+    let token = jwt.sign(payload, APP_SECRET, {
       expiresIn: '24h',
       issuer: 'classroom-manager'
     })
@@ -57,84 +57,92 @@ const createToken = (payload) => {
 }
 
 const stripToken = (req, res, next) => {
+  console.log('🔍 stripToken middleware called for:', req.method, req.url)
+  console.log('📝 Request headers:', req.headers)
+
   try {
     const authHeader = req.headers['authorization']
-    
+    console.log('🔑 Authorization header:', authHeader)
+
     if (!authHeader) {
-      return res.status(401).json({ 
+      console.log('❌ No authorization header provided')
+      return res.status(401).json({
         status: 'Error',
-        msg: 'No authorization header provided' 
+        msg: 'No authorization header provided'
       })
     }
-    
+
     if (!authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
+      console.log('❌ Authorization header must start with Bearer')
+      return res.status(401).json({
         status: 'Error',
-        msg: 'Authorization header must start with Bearer' 
+        msg: 'Authorization header must start with Bearer'
       })
     }
-    
+
     const token = authHeader.split(' ')[1]
-    
+
     if (!token) {
-      return res.status(401).json({ 
+      console.log('❌ No token provided in authorization header')
+      return res.status(401).json({
         status: 'Error',
-        msg: 'No token provided in authorization header' 
+        msg: 'No token provided in authorization header'
       })
     }
-    
+
+    console.log('✅ Token extracted successfully')
     res.locals.token = token
     return next()
-    
+
   } catch (error) {
-    console.error('Error stripping token:', error)
-    return res.status(401).json({ 
+    console.error('💥 Error stripping token:', error)
+    return res.status(401).json({
       status: 'Error',
-      msg: 'Invalid authorization header format' 
+      msg: 'Invalid authorization header format'
     })
   }
 }
 
 const verifyToken = (req, res, next) => {
   const { token } = res.locals
-  
+
   if (!token) {
-    return res.status(401).json({ 
-      status: 'Error', 
-      msg: 'No token found' 
+    return res.status(401).json({
+      status: 'Error',
+      msg: 'No token found'
     })
   }
-  
+
   try {
     let payload = jwt.verify(token, APP_SECRET)
-    
+
     if (payload) {
       res.locals.payload = payload
       return next()
     }
-    
-    return res.status(401).json({ 
-      status: 'Error', 
-      msg: 'Invalid token payload' 
+
+    return res.status(401).json({
+      status: 'Error',
+      msg: 'Invalid token payload'
     })
-    
+
   } catch (error) {
     console.error('Token verification error:', error)
-    
+
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        status: 'Error', 
-        msg: 'Token has expired' 
+      return res.status(401).json({
+        status: 'Error',
+        msg: 'Token has expired'
       })
     } else if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        status: 'Error', 
-        msg: 'Invalid token format' 
+      return res.status(401).json({
+        status: 'Error',
+        msg: 'Invalid token format'
       })
     } else {
-      return res.status(401).json({ 
-        status: 'Error', 
-        msg: 'Token verification failed' 
+      return res.status(401).json({
+        status: 'Error',
+        msg: 'Token verification failed'
       })
     }
   }
@@ -142,42 +150,42 @@ const verifyToken = (req, res, next) => {
 
 const isAdmin = (req, res, next) => {
   const { payload } = res.locals
-  
+
   if (!payload) {
-    return res.status(401).json({ 
-      status: 'Error', 
-      msg: 'No user payload found' 
+    return res.status(401).json({
+      status: 'Error',
+      msg: 'No user payload found'
     })
   }
-  
+
   if (payload.role === 'admin') {
     return next()
   }
-  
-  return res.status(403).json({ 
-    status: 'Error', 
-    msg: 'Access denied. Admin privileges required.' 
+
+  return res.status(403).json({
+    status: 'Error',
+    msg: 'Access denied. Admin privileges required.'
   })
 }
 
 const hasRole = (...roles) => {
   return (req, res, next) => {
     const { payload } = res.locals
-    
+
     if (!payload) {
-      return res.status(401).json({ 
-        status: 'Error', 
-        msg: 'No user payload found' 
+      return res.status(401).json({
+        status: 'Error',
+        msg: 'No user payload found'
       })
     }
-    
+
     if (roles.includes(payload.role)) {
       return next()
     }
-    
-    return res.status(403).json({ 
-      status: 'Error', 
-      msg: `Access denied. Required roles: ${roles.join(', ')}` 
+
+    return res.status(403).json({
+      status: 'Error',
+      msg: `Access denied. Required roles: ${roles.join(', ')}`
     })
   }
 }
@@ -185,21 +193,21 @@ const hasRole = (...roles) => {
 const isOwnerOrAdmin = (req, res, next) => {
   const { payload } = res.locals
   const resourceUserId = req.params.userId || req.body.userId
-  
+
   if (!payload) {
-    return res.status(401).json({ 
-      status: 'Error', 
-      msg: 'No user payload found' 
+    return res.status(401).json({
+      status: 'Error',
+      msg: 'No user payload found'
     })
   }
-  
+
   if (payload.role === 'admin' || payload.id === resourceUserId) {
     return next()
   }
-  
-  return res.status(403).json({ 
-    status: 'Error', 
-    msg: 'Access denied. You can only access your own resources.' 
+
+  return res.status(403).json({
+    status: 'Error',
+    msg: 'Access denied. You can only access your own resources.'
   })
 }
 
