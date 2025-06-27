@@ -1,48 +1,47 @@
 const router = require('express').Router()
-const controller = require('../controllers/PostController')
+const controller = require('../controllers/SubmissionController')
 const middleware = require('../middleware')
 
-// Get all posts
+// Get all submissions
 router.get(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetAllPosts
+  controller.GetAllSubmissions
 )
 
-// Get post by ID
+// Get submission by ID
 router.get(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetPostById
+  controller.GetSubmissionById
 )
 
-// Create post
+// Create submission
 router.post(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  middleware.isAdminOrSupervisor,
-  controller.CreatePost
+  controller.CreateSubmission
 )
 
-// Update post
+// Update submission (grading/feedback)
 router.put(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.UpdatePost
+  controller.UpdateSubmission
 )
 
-// Delete post
+// Delete submission
 router.delete(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.DeletePost
+  controller.DeleteSubmission
 )
 
 module.exports = router

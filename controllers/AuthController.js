@@ -2,8 +2,7 @@ const { User } = require('../models')
 const middleware = require('../middleware')
 const crypto = require('crypto')
 const bcrypt = require('bcrypt')
-
-
+const jwt = require('jsonwebtoken')
 
 // Add User (by admin or supervisor)
 const AddUser = async (req, res) => {
@@ -84,7 +83,73 @@ const SetPassword = async (req, res) => {
   }
 }
 
+// Login
+const Login = async (req, res) => {
+  try {
+    const { email, password } = req.body
+    const user = await User.findOne({ email })
+    if (!user || user.accountStatus !== 'active') {
+      return res.status(401).json({ status: 'Error', msg: 'Invalid credentials or inactive account.' })
+    }
+    const validPassword = await bcrypt.compare(password, user.passwordDigest)
+    if (!validPassword) {
+      return res.status(401).json({ status: 'Error', msg: 'Invalid credentials.' })
+    }
+    const payload = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name
+    }
+    const token = jwt.sign(payload, process.env.APP_SECRET, { expiresIn: '24h' })
+    res.json({ status: 'Success', token, user: payload })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Login failed.' })
+  }
+}
+
+// Check session
+const CheckSession = async (req, res) => {
+  try {
+    // req.user is set by verifyToken middleware
+    if (!req.user) {
+      return res.status(401).json({ status: 'Error', msg: 'Not authenticated.' })
+    }
+    res.json({ status: 'Success', user: req.user })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Session check failed.' })
+  }
+}
+
+// Update password (for logged-in user)
+const UpdatePassword = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { oldPassword, newPassword } = req.body
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ status: 'Error', msg: 'User not found.' })
+    }
+    const validPassword = await bcrypt.compare(oldPassword, user.passwordDigest)
+    if (!validPassword) {
+      return res.status(400).json({ status: 'Error', msg: 'Old password is incorrect.' })
+    }
+    const saltRounds = parseInt(process.env.SALT_ROUNDS) || 10
+    user.passwordDigest = await bcrypt.hash(newPassword, saltRounds)
+    await user.save()
+    res.json({ status: 'Success', msg: 'Password updated successfully.' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Password update failed.' })
+  }
+}
+
 module.exports = {
+  Login,
   AddUser,
-  SetPassword
+  SetPassword,
+  CheckSession,
+  UpdatePassword
 }

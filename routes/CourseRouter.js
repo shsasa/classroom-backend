@@ -1,48 +1,48 @@
 const router = require('express').Router()
-const controller = require('../controllers/PostController')
+const controller = require('../controllers/CourseController')
 const middleware = require('../middleware')
 
-// Get all posts
+// Get all courses
 router.get(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetAllPosts
+  controller.GetAllCourses
 )
 
-// Get post by ID
+// Get course by ID
 router.get(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetPostById
+  controller.GetCourseById
 )
 
-// Create post
+// Create course
 router.post(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.CreatePost
+  controller.CreateCourse
 )
 
-// Update post
+// Update course
 router.put(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.UpdatePost
+  controller.UpdateCourse
 )
 
-// Delete post
+// Delete course
 router.delete(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.DeletePost
+  controller.DeleteCourse
 )
 
 module.exports = router

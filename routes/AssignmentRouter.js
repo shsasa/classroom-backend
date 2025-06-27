@@ -1,48 +1,48 @@
 const router = require('express').Router()
-const controller = require('../controllers/PostController')
+const controller = require('../controllers/AssignmentController')
 const middleware = require('../middleware')
 
-// Get all posts
+// Get all assignments
 router.get(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetAllPosts
+  controller.GetAllAssignments
 )
 
-// Get post by ID
+// Get assignment by ID
 router.get(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetPostById
+  controller.GetAssignmentById
 )
 
-// Create post
+// Create assignment
 router.post(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.CreatePost
+  controller.CreateAssignment
 )
 
-// Update post
+// Update assignment
 router.put(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.UpdatePost
+  controller.UpdateAssignment
 )
 
-// Delete post
+// Delete assignment
 router.delete(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.DeletePost
+  controller.DeleteAssignment
 )
 
 module.exports = router

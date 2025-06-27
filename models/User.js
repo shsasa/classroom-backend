@@ -1,4 +1,4 @@
-const { Schema } = require('mongoose')
+const { Schema, model } = require('mongoose')
 
 const userSchema = new Schema(
   {
@@ -10,7 +10,8 @@ const userSchema = new Schema(
       type: String,
       enum: ['student', 'teacher', 'admin', 'supervisor'],
       default: 'student'
-    }, accountStatus: {
+    },
+    accountStatus: {
       type: String,
       enum: ['pending', 'active'],
       default: 'pending'
@@ -21,4 +22,4 @@ const userSchema = new Schema(
   { timestamps: true }
 )
 
-module.exports = userSchema
+module.exports = model('User', userSchema)

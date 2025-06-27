@@ -1,9 +1,10 @@
-const { Schema } = require('mongoose')
+const { Schema, model } = require('mongoose')
 
 const attendanceSchema = new Schema(
   {
     batch: { type: Schema.Types.ObjectId, ref: 'Batch', required: true }, // The batch for this attendance record
     date: { type: Date, required: true }, // The date of attendance
+    period: { type: String, trim: true }, // Period name or code (e.g. "First", "Second", "Math", etc.)
     records: [
       {
         student: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -17,7 +18,6 @@ const attendanceSchema = new Schema(
         notes: { type: String, trim: true }
       }
     ],
-    period: { type: String, trim: true }, // Optional: period name or code
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
   },
   { timestamps: true }

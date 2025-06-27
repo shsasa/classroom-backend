@@ -1,48 +1,48 @@
 const router = require('express').Router()
-const controller = require('../controllers/PostController')
+const controller = require('../controllers/AttendanceController')
 const middleware = require('../middleware')
 
-// Get all posts
+// Get all attendance records
 router.get(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetAllPosts
+  controller.GetAllAttendance
 )
 
-// Get post by ID
+// Get attendance record by ID
 router.get(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetPostById
+  controller.GetAttendanceById
 )
 
-// Create post
+// Create attendance record
 router.post(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.CreatePost
+  controller.CreateAttendance
 )
 
-// Update post
+// Update attendance record
 router.put(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.UpdatePost
+  controller.UpdateAttendance
 )
 
-// Delete post
+// Delete attendance record
 router.delete(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.DeletePost
+  controller.DeleteAttendance
 )
 
 module.exports = router

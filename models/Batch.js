@@ -1,4 +1,4 @@
-const { Schema } = require('mongoose')
+const { Schema, model } = require('mongoose')
 
 const batchSchema = new Schema(
   {
@@ -21,4 +21,4 @@ const batchSchema = new Schema(
   { timestamps: true }
 )
 
-module.exports = batchSchema
+module.exports = model('Batch', batchSchema)

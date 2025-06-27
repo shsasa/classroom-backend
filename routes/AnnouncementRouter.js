@@ -1,48 +1,50 @@
 const router = require('express').Router()
-const controller = require('../controllers/PostController')
+const controller = require('../controllers/AnnouncementController')
 const middleware = require('../middleware')
 
-// Get all posts
+// Get all announcements
 router.get(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetAllPosts
+  controller.GetAllAnnouncements
 )
 
-// Get post by ID
+// Get announcement by ID
 router.get(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
-  controller.GetPostById
+  controller.GetAnnouncementById
 )
 
-// Create post
+// Create announcement
 router.post(
   '/',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.CreatePost
+  controller.CreateAnnouncement
 )
 
-// Update post
+// Update announcement
 router.put(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.UpdatePost
+  controller.UpdateAnnouncement
 )
 
-// Delete post
+// Delete announcement
 router.delete(
   '/:id',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.DeletePost
+  controller.DeleteAnnouncement
 )
+
+
 
 module.exports = router
