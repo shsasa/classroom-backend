@@ -112,11 +112,12 @@ const Login = async (req, res) => {
 // Check session
 const CheckSession = async (req, res) => {
   try {
-    // req.user is set by verifyToken middleware
-    if (!req.user) {
+    // payload is set by verifyToken middleware in res.locals.payload
+    const { payload } = res.locals
+    if (!payload) {
       return res.status(401).json({ status: 'Error', msg: 'Not authenticated.' })
     }
-    res.json({ status: 'Success', user: req.user })
+    res.json({ status: 'Success', user: payload })
   } catch (error) {
     console.error(error)
     res.status(500).json({ status: 'Error', msg: 'Session check failed.' })
