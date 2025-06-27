@@ -18,7 +18,6 @@ const PORT = process.env.PORT || 3000
 const db = require('./db')
 const app = express()
 
-// Simple CORS configuration - اختبر هذا أولاً
 app.use(cors({
   origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
