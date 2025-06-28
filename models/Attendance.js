@@ -8,10 +8,10 @@ const attendanceSchema = new Schema(
     records: [
       {
         student: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-        status: { 
-          type: String, 
-          enum: ['present', 'absent', 'late', 'left_early'], 
-          required: true 
+        status: {
+          type: String,
+          enum: ['present', 'absent', 'late', 'left_early'],
+          required: true
         },
         checkInTime: { type: String },   // e.g. "09:05"
         checkOutTime: { type: String },  // e.g. "11:30"
@@ -23,4 +23,4 @@ const attendanceSchema = new Schema(
   { timestamps: true }
 )
 
-module.exports = attendanceSchema
+module.exports = model('Attendance', attendanceSchema)

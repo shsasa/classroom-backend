@@ -48,7 +48,7 @@ router.delete(
 )
 
 // Change user role
-router.patch(
+router.put(
   '/:id/role',
   middleware.stripToken,
   middleware.verifyToken,
@@ -57,7 +57,7 @@ router.patch(
 )
 
 // Change user status
-router.patch(
+router.put(
   '/:id/status',
   middleware.stripToken,
   middleware.verifyToken,

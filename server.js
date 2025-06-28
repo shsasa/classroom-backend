@@ -19,11 +19,27 @@ const db = require('./db')
 const app = express()
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }))
+
+// Additional CORS headers middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:5173')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+  res.header('Access-Control-Allow-Credentials', 'true')
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end()
+  }
+
+  next()
+})
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))

@@ -110,31 +110,20 @@ const ChangeUserRole = async (req, res) => {
 // Change user status
 const ChangeUserStatus = async (req, res) => {
   try {
-    console.log('ChangeUserStatus called with:', {
-      userId: req.params.id,
-      body: req.body,
-      userRole: res.locals.payload?.role
-    })
-
     const { accountStatus } = req.body
 
     if (!accountStatus) {
-      console.log('No accountStatus provided in request body')
       return res.status(400).json({ status: 'Error', msg: 'Account status is required.' })
     }
 
     const user = await User.findById(req.params.id)
     if (!user) {
-      console.log('User not found:', req.params.id)
       return res.status(404).json({ status: 'Error', msg: 'User not found.' })
     }
-
-    console.log('User found, updating status from', user.accountStatus, 'to', accountStatus)
 
     user.accountStatus = accountStatus
     await user.save()
 
-    console.log('User status updated successfully')
     res.json({ status: 'Success', msg: 'User status updated.', user })
   } catch (error) {
     console.error('Error in ChangeUserStatus:', error)
