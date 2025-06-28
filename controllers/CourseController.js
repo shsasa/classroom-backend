@@ -11,7 +11,10 @@ const GetAllCourses = async (req, res) => {
     if (search) {
       filter.name = { $regex: search, $options: 'i' }
     }
-    const courses = await Course.find(filter).sort({ name: 1 })
+    const courses = await Course.find(filter)
+      .populate('teachers', 'name email')
+      .populate('batches', 'name')
+      .sort({ name: 1 })
     res.json(courses)
   } catch (error) {
     console.error(error)
@@ -23,6 +26,8 @@ const GetAllCourses = async (req, res) => {
 const GetCourseById = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
+      .populate('teachers', 'name email')
+      .populate('batches', 'name')
     if (!course) {
       return res.status(404).json({ status: 'Error', msg: 'Course not found.' })
     }
