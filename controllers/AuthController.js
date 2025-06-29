@@ -3,6 +3,7 @@ const middleware = require('../middleware')
 const crypto = require('crypto')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const emailService = require('../services/emailService')
 
 // Add User (by admin or supervisor)
 const AddUser = async (req, res) => {
@@ -35,7 +36,17 @@ const AddUser = async (req, res) => {
       resetTokenExpires
     })
 
-    // TODO: Send email to user with resetToken link for password setup
+    // Send email to user with resetToken link for password setup
+    try {
+      await emailService.sendAccountActivationEmail({
+        ...user.toObject(),
+        password: null // Indicate password setup required
+      })
+      console.log(`Account activation email sent to ${user.email}`)
+    } catch (emailError) {
+      console.error('Failed to send activation email:', emailError)
+      // Don't fail user creation if email fails
+    }
 
     const userData = {
       id: user.id,
@@ -172,7 +183,17 @@ const GenerateResetToken = async (req, res) => {
     user.resetTokenExpires = resetTokenExpires
     await user.save()
 
-    // TODO: Send email to user with resetToken link for password reset
+    // Send email to user with resetToken link for password reset
+    try {
+      await emailService.sendPasswordResetEmail(user, resetToken)
+      console.log(`Password reset email sent to ${user.email}`)
+    } catch (emailError) {
+      console.error('Failed to send reset email:', emailError)
+      return res.status(500).json({
+        status: 'Error',
+        msg: 'Failed to send reset email. Please try again.'
+      })
+    }
 
     res.json({
       status: 'Success',

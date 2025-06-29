@@ -2,35 +2,41 @@ const router = require('express').Router()
 const controller = require('../controllers/AuthController')
 const middleware = require('../middleware')
 
+// User login
 router.post('/login', controller.Login)
-router.post(
-  '/add-user',
-  middleware.stripToken,
-  middleware.verifyToken,
-  middleware.isAdminOrSupervisor,
-  controller.AddUser
-)
-router.post('/set-password', controller.SetPassword)
-router.post('/reset-password', controller.ResetPassword)
+
+// Activate account for first time
 router.post('/activate-account', controller.ActivateAccount)
-router.post(
-  '/generate-reset-token/:userId',
-  middleware.stripToken,
-  middleware.verifyToken,
-  middleware.isAdminOrSupervisor,
-  controller.GenerateResetToken
-)
+
+// Set new password using reset token
+router.post('/set-password', controller.SetPassword)
+
+// Reset password (request reset token)
+router.post('/reset-password', controller.ResetPassword)
+
+// Check session
 router.get(
   '/session',
   middleware.stripToken,
   middleware.verifyToken,
   controller.CheckSession
 )
+
+// Update password for logged-in user
 router.put(
   '/update-password',
   middleware.stripToken,
   middleware.verifyToken,
   controller.UpdatePassword
+)
+
+// Generate reset token (admin/supervisor only)
+router.post(
+  '/generate-reset-token/:userId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.GenerateResetToken
 )
 
 module.exports = router

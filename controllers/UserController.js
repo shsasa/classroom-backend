@@ -1,4 +1,7 @@
 const { User } = require('../models')
+const PasswordReset = require('../models/PasswordReset')
+const emailService = require('../services/emailService')
+const crypto = require('crypto')
 
 // Get all users (with optional filters)
 const GetAllUsers = async (req, res) => {
@@ -168,12 +171,219 @@ const GetUserResetToken = async (req, res) => {
   }
 }
 
+// Create new user (admin/supervisor only)
+const CreateUser = async (req, res) => {
+  try {
+    const { name, email, role, accountStatus, password } = req.body
+
+    console.log('CreateUser request data:', { name, email, role, accountStatus, hasPassword: !!password })
+
+    // Check if user with email already exists
+    const existingUser = await User.findOne({ email })
+
+    console.log('Existing user found:', existingUser ? { id: existingUser._id, email: existingUser.email } : null)
+
+    if (existingUser) {
+      return res.status(400).json({
+        status: 'Error',
+        msg: 'User with this email already exists.'
+      })
+    }
+
+    // Create new user
+    const userData = {
+      name,
+      email,
+      role: role || 'student',
+      accountStatus: accountStatus || 'active'
+    }
+
+    // Add password if provided
+    if (password) {
+      userData.password = password
+    }
+
+    const user = await User.create(userData)
+
+    // Send welcome email
+    try {
+      await emailService.sendAccountActivationEmail(user)
+      console.log(`Welcome email sent to ${user.email}`)
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError)
+      // Don't fail the user creation if email fails
+    }
+
+    // Return user without sensitive data
+    const userResponse = user.toObject()
+    delete userResponse.passwordDigest
+    delete userResponse.resetToken
+    delete userResponse.resetTokenExpires
+
+    res.status(201).json({
+      status: 'Success',
+      msg: 'User created successfully. Welcome email sent.',
+      user: userResponse
+    })
+  } catch (error) {
+    console.error('Error in CreateUser:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to create user.' })
+  }
+}
+
+// Request password reset
+const RequestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ status: 'Error', msg: 'Email is required.' })
+    }
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.json({
+        status: 'Success',
+        msg: 'If the email exists, a password reset link has been sent.'
+      })
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex')
+
+    // Save reset token to database
+    await PasswordReset.create({
+      userId: user._id,
+      token: resetToken,
+      expiresAt: new Date(Date.now() + 3600000) // 1 hour
+    })
+
+    // Send reset email
+    try {
+      await emailService.sendPasswordResetEmail(user, resetToken)
+      console.log(`Password reset email sent to ${user.email}`)
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError)
+      return res.status(500).json({
+        status: 'Error',
+        msg: 'Failed to send password reset email.'
+      })
+    }
+
+    res.json({
+      status: 'Success',
+      msg: 'Password reset link has been sent to your email.'
+    })
+  } catch (error) {
+    console.error('Error in RequestPasswordReset:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to process password reset request.' })
+  }
+}
+
+// Verify password reset token
+const VerifyPasswordResetToken = async (req, res) => {
+  try {
+    const { token } = req.query
+
+    if (!token) {
+      return res.status(400).json({ status: 'Error', msg: 'Reset token is required.' })
+    }
+
+    const passwordReset = await PasswordReset.findOne({
+      token,
+      used: false,
+      expiresAt: { $gt: new Date() }
+    }).populate('userId', 'name email')
+
+    if (!passwordReset) {
+      return res.status(400).json({
+        status: 'Error',
+        msg: 'Invalid or expired reset token.'
+      })
+    }
+
+    res.json({
+      status: 'Success',
+      msg: 'Token is valid.',
+      user: {
+        name: passwordReset.userId.name,
+        email: passwordReset.userId.email
+      }
+    })
+  } catch (error) {
+    console.error('Error in VerifyPasswordResetToken:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to verify reset token.' })
+  }
+}
+
+// Reset password with token
+const ResetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        status: 'Error',
+        msg: 'Reset token and new password are required.'
+      })
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'Error',
+        msg: 'Password must be at least 6 characters long.'
+      })
+    }
+
+    const passwordReset = await PasswordReset.findOne({
+      token,
+      used: false,
+      expiresAt: { $gt: new Date() }
+    })
+
+    if (!passwordReset) {
+      return res.status(400).json({
+        status: 'Error',
+        msg: 'Invalid or expired reset token.'
+      })
+    }
+
+    // Update user password
+    const user = await User.findById(passwordReset.userId)
+    if (!user) {
+      return res.status(404).json({ status: 'Error', msg: 'User not found.' })
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    // Mark token as used
+    passwordReset.used = true
+    await passwordReset.save()
+
+    console.log(`Password reset successful for user: ${user.email}`)
+
+    res.json({
+      status: 'Success',
+      msg: 'Password has been reset successfully. You can now login with your new password.'
+    })
+  } catch (error) {
+    console.error('Error in ResetPassword:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to reset password.' })
+  }
+}
+
 module.exports = {
   GetAllUsers,
   GetUserById,
+  CreateUser,
   UpdateUser,
   DeleteUser,
   ChangeUserRole,
   ChangeUserStatus,
-  GetUserResetToken
+  GetUserResetToken,
+  RequestPasswordReset,
+  VerifyPasswordResetToken,
+  ResetPassword
 }
