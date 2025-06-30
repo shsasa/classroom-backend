@@ -3,7 +3,11 @@ const { Batch } = require('../models')
 // Get all batches
 const GetAllBatches = async (req, res) => {
   try {
-    const batches = await Batch.find().populate('course').populate('students')
+    const batches = await Batch.find()
+      .populate('courses')
+      .populate('students')
+      .populate('teachers')
+      .populate('supervisors')
     res.status(200).json(batches)
   } catch (error) {
     console.error('Error fetching batches:', error)
@@ -15,8 +19,10 @@ const GetAllBatches = async (req, res) => {
 const GetBatchById = async (req, res) => {
   try {
     const batch = await Batch.findById(req.params.id)
-      .populate('course')
+      .populate('courses')
       .populate('students')
+      .populate('teachers')
+      .populate('supervisors')
 
     if (!batch) {
       return res.status(404).json({ message: 'Batch not found' })

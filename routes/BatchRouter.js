@@ -47,4 +47,22 @@ router.delete(
   controller.DeleteBatch
 )
 
+// Add student to batch
+router.post(
+  '/:id/students',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.addStudentToBatch
+)
+
+// Remove student from batch
+router.delete(
+  '/:id/students/:studentId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.removeStudentFromBatch
+)
+
 module.exports = router
