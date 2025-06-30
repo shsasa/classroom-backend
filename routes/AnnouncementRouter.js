@@ -1,6 +1,15 @@
 const router = require('express').Router()
 const controller = require('../controllers/AnnouncementController')
 const middleware = require('../middleware')
+const upload = require('../middleware/multer')
+
+// Get filter data (batches and courses) - no auth required for basic data
+router.get(
+  '/filter-data',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetFilterData
+)
 
 // Get all announcements
 router.get(
@@ -24,6 +33,7 @@ router.post(
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
+  upload.array('attachments', 5), // Allow up to 5 files
   controller.CreateAnnouncement
 )
 
@@ -33,6 +43,7 @@ router.put(
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
+  upload.array('attachments', 5), // Allow up to 5 files
   controller.UpdateAnnouncement
 )
 

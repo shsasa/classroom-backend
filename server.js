@@ -2,6 +2,7 @@ const express = require('express')
 const logger = require('morgan')
 const cors = require('cors')
 const path = require('path')
+const fs = require('fs')
 
 const AuthRouter = require('./routes/AuthRouter')
 const PostRouter = require('./routes/PostRouter')
@@ -44,8 +45,16 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
-// Serve static files (uploads)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+// Serve static files (uploads from public/uploads directory)
+app.use('/uploads', (req, res, next) => {
+  // Add CORS headers for file access
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin')
+  next()
+}, express.static(path.join(__dirname, 'public', 'uploads')))
+
+// Additional static file serving for debugging
+app.use('/public', express.static(path.join(__dirname, 'public')))
 
 app.use('/auth', AuthRouter)
 app.use('/posts', PostRouter)
@@ -74,6 +83,36 @@ app.get('/', (req, res) => {
       submissions: '/submissions'
     }
   })
+})
+
+// Debug route for uploads
+app.get('/debug/uploads', (req, res) => {
+  try {
+    const uploadsPath = path.join(__dirname, 'public', 'uploads')
+    const files = fs.readdirSync(uploadsPath)
+
+    const fileList = files.map(file => {
+      const filePath = path.join(uploadsPath, file)
+      const stats = fs.statSync(filePath)
+      return {
+        name: file,
+        size: stats.size,
+        modified: stats.mtime,
+        url: `/uploads/${encodeURIComponent(file)}`
+      }
+    })
+
+    res.json({
+      uploadsDirectory: uploadsPath,
+      totalFiles: files.length,
+      files: fileList
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to read uploads directory',
+      details: error.message
+    })
+  }
 })
 
 // Error handling middleware
