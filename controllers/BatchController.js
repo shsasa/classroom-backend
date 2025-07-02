@@ -626,6 +626,105 @@ const GetStudentBatchDetails = async (req, res) => {
   }
 }
 
+// Get batches for current teacher
+const GetTeacherBatches = async (req, res) => {
+  try {
+    const teacherId = res.locals.payload.id
+    const { status, search } = req.query
+
+    let filter = {
+      $or: [
+        { teachers: teacherId }, // Teacher assigned to batch
+        { supervisors: teacherId } // Teacher is supervisor of batch
+      ]
+    }
+
+    if (status && status !== 'all') {
+      filter.status = status
+    }
+
+    if (search) {
+      filter.$and = [
+        filter,
+        {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } }
+          ]
+        }
+      ]
+    }
+
+    // Also include batches where teacher teaches courses in the batch
+    const teacherCourses = await Course.find({ teachers: teacherId })
+    const teacherCourseIds = teacherCourses.map(course => course._id)
+
+    if (teacherCourseIds.length > 0) {
+      filter = {
+        $or: [
+          ...filter.$or,
+          { courses: { $in: teacherCourseIds } } // Batches containing teacher's courses
+        ]
+      }
+    }
+
+    const batches = await Batch.find(filter)
+      .populate('students', 'name email')
+      .populate('teachers', 'name email')
+      .populate('supervisors', 'name email')
+      .populate('courses', 'name description')
+      .sort({ createdAt: -1 })
+
+    res.json(batches)
+  } catch (error) {
+    console.error('Error fetching teacher batches:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch teacher batches.' })
+  }
+}
+
+// Get batch details for teacher (if teacher has access to it)
+const GetTeacherBatchDetails = async (req, res) => {
+  try {
+    const teacherId = res.locals.payload.id
+    const batchId = req.params.id
+    const { Course } = require('../models')
+
+    // Find the batch
+    const batch = await Batch.findById(batchId)
+      .populate('students', 'name email')
+      .populate('teachers', 'name email')
+      .populate('supervisors', 'name email')
+      .populate('courses', 'name description')
+
+    if (!batch) {
+      return res.status(404).json({ status: 'Error', msg: 'Batch not found.' })
+    }
+
+    // Check if teacher has access to this batch
+    const hasAccess =
+      batch.teachers.some(teacher => teacher._id.toString() === teacherId) ||
+      batch.supervisors.some(supervisor => supervisor._id.toString() === teacherId)
+
+    // Also check if teacher teaches any courses in this batch
+    if (!hasAccess) {
+      const teacherCourses = await Course.find({ teachers: teacherId })
+      const teacherCourseIds = teacherCourses.map(course => course._id.toString())
+      const batchCourseIds = batch.courses.map(course => course._id.toString())
+
+      hasAccess = teacherCourseIds.some(courseId => batchCourseIds.includes(courseId))
+    }
+
+    if (!hasAccess) {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. You do not have permission to view this batch.' })
+    }
+
+    res.json(batch)
+  } catch (error) {
+    console.error('Error fetching teacher batch details:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch batch details.' })
+  }
+}
+
 module.exports = {
   GetAllBatches,
   GetBatchById,
@@ -644,5 +743,7 @@ module.exports = {
   GetBatchAssignments,
   CreateBatchAssignment,
   GetStudentBatches,
-  GetStudentBatchDetails
+  GetStudentBatchDetails,
+  GetTeacherBatches,
+  GetTeacherBatchDetails
 }

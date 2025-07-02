@@ -107,15 +107,19 @@ const DeleteAssignment = async (req, res) => {
 const GetStudentAssignments = async (req, res) => {
   try {
     const studentId = res.locals.payload.id
-    const { User, Batch } = require('../models')
+    const { Batch } = require('../models')
 
-    // Find batches that the student belongs to
-    const student = await User.findById(studentId).populate('batches')
-    if (!student) {
-      return res.status(404).json({ status: 'Error', msg: 'Student not found.' })
+    // Find batches that include this student
+    const studentBatches = await Batch.find({
+      students: studentId,
+      isActive: true
+    })
+
+    if (!studentBatches || studentBatches.length === 0) {
+      return res.json([]) // Return empty array if student is not in any batch
     }
 
-    const studentBatchIds = student.batches.map(batch => batch._id)
+    const studentBatchIds = studentBatches.map(batch => batch._id)
 
     // Find assignments for student's batches
     const assignments = await Assignment.find({
@@ -139,13 +143,7 @@ const GetStudentAssignmentDetails = async (req, res) => {
   try {
     const studentId = res.locals.payload.id
     const assignmentId = req.params.id
-    const { User } = require('../models')
-
-    // Check if student belongs to assignment's batch
-    const student = await User.findById(studentId).populate('batches')
-    if (!student) {
-      return res.status(404).json({ status: 'Error', msg: 'Student not found.' })
-    }
+    const { Batch } = require('../models')
 
     const assignment = await Assignment.findById(assignmentId)
       .populate('batch', 'name')
@@ -157,8 +155,13 @@ const GetStudentAssignmentDetails = async (req, res) => {
     }
 
     // Check if student is enrolled in the assignment's batch
-    const isEnrolled = student.batches.some(batch =>
-      batch._id.toString() === assignment.batch._id.toString()
+    const batch = await Batch.findById(assignment.batch._id)
+    if (!batch) {
+      return res.status(404).json({ status: 'Error', msg: 'Batch not found.' })
+    }
+
+    const isEnrolled = batch.students.some(student =>
+      student.toString() === studentId
     )
 
     if (!isEnrolled) {
@@ -168,6 +171,57 @@ const GetStudentAssignmentDetails = async (req, res) => {
     res.json(assignment)
   } catch (error) {
     console.error('Error fetching assignment details:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch assignment details.' })
+  }
+}
+
+// Get assignment details for student with submission status
+const GetStudentAssignmentWithSubmission = async (req, res) => {
+  try {
+    const studentId = res.locals.payload.id
+    const assignmentId = req.params.id
+    const { Batch, Submission } = require('../models')
+
+    const assignment = await Assignment.findById(assignmentId)
+      .populate('batch', 'name')
+      .populate('course', 'name')
+      .populate('teacher', 'name email')
+
+    if (!assignment) {
+      return res.status(404).json({ status: 'Error', msg: 'Assignment not found.' })
+    }
+
+    // Check if student is enrolled in the assignment's batch
+    const batch = await Batch.findById(assignment.batch._id)
+    if (!batch) {
+      return res.status(404).json({ status: 'Error', msg: 'Batch not found.' })
+    }
+
+    const isEnrolled = batch.students.some(student =>
+      student.toString() === studentId
+    )
+
+    if (!isEnrolled) {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. You are not enrolled in this assignment\'s batch.' })
+    }
+
+    // Check for existing submission
+    const submission = await Submission.findOne({
+      assignment: assignmentId,
+      student: studentId
+    })
+
+    const response = {
+      assignment,
+      submission: submission || null,
+      hasSubmitted: !!submission,
+      canSubmit: assignment.isActive && new Date() <= new Date(assignment.dueDate),
+      isOverdue: new Date() > new Date(assignment.dueDate)
+    }
+
+    res.json(response)
+  } catch (error) {
+    console.error('Error fetching assignment with submission:', error)
     res.status(500).json({ status: 'Error', msg: 'Failed to fetch assignment details.' })
   }
 }
@@ -199,5 +253,6 @@ module.exports = {
   DeleteAssignment,
   GetStudentAssignments,
   GetStudentAssignmentDetails,
+  GetStudentAssignmentWithSubmission,
   GetTeacherAssignments
 }

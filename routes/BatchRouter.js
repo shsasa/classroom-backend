@@ -2,6 +2,38 @@ const router = require('express').Router()
 const controller = require('../controllers/BatchController')
 const middleware = require('../middleware')
 
+// Get batches for current teacher (must come before general routes)
+router.get(
+  '/teacher/my-batches',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherBatches
+)
+
+// Get batches for current student (must come before general routes)
+router.get(
+  '/student/my-batches',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentBatches
+)
+
+// Get specific batch details for student (must come before /:id)
+router.get(
+  '/student/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentBatchDetails
+)
+
+// Get specific batch details for teacher (must come before /:id)
+router.get(
+  '/teacher/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherBatchDetails
+)
+
 // Get all batches
 router.get(
   '/',
@@ -125,22 +157,6 @@ router.post(
   middleware.verifyToken,
   middleware.isTeacherOrAbove,
   controller.CreateBatchAssignment
-)
-
-// Get batches for current student
-router.get(
-  '/student/my-batches',
-  middleware.stripToken,
-  middleware.verifyToken,
-  controller.GetStudentBatches
-)
-
-// Get specific batch details for student
-router.get(
-  '/student/:id',
-  middleware.stripToken,
-  middleware.verifyToken,
-  controller.GetStudentBatchDetails
 )
 
 module.exports = router

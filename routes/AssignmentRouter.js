@@ -2,6 +2,38 @@ const router = require('express').Router()
 const controller = require('../controllers/AssignmentController')
 const middleware = require('../middleware')
 
+// Get assignments for current student (must come before /:id)
+router.get(
+  '/student/my-assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentAssignments
+)
+
+// Get specific assignment details for student (must come before /:id)
+router.get(
+  '/student/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentAssignmentDetails
+)
+
+// Get assignment with submission status for student
+router.get(
+  '/student/:id/submission-status',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentAssignmentWithSubmission
+)
+
+// Get assignments for current teacher (must come before /:id)
+router.get(
+  '/teacher/my-assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherAssignments
+)
+
 // Get all assignments
 router.get(
   '/',
@@ -10,7 +42,7 @@ router.get(
   controller.GetAllAssignments
 )
 
-// Get assignment by ID
+// Get assignment by ID (must come after specific routes)
 router.get(
   '/:id',
   middleware.stripToken,
@@ -43,30 +75,6 @@ router.delete(
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
   controller.DeleteAssignment
-)
-
-// Get assignments for current student
-router.get(
-  '/student/my-assignments',
-  middleware.stripToken,
-  middleware.verifyToken,
-  controller.GetStudentAssignments
-)
-
-// Get specific assignment details for student
-router.get(
-  '/student/:id',
-  middleware.stripToken,
-  middleware.verifyToken,
-  controller.GetStudentAssignmentDetails
-)
-
-// Get assignments for current teacher
-router.get(
-  '/teacher/my-assignments',
-  middleware.stripToken,
-  middleware.verifyToken,
-  controller.GetTeacherAssignments
 )
 
 module.exports = router

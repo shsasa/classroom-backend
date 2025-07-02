@@ -61,4 +61,20 @@ router.get(
   controller.GetStudentCourseDetails
 )
 
+// Get courses for current teacher
+router.get(
+  '/teacher/my-courses',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherCourses
+)
+
+// Get specific course details for teacher
+router.get(
+  '/teacher/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherCourseDetails
+)
+
 module.exports = router

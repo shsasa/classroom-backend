@@ -138,6 +138,33 @@ const GetStudentCourses = async (req, res) => {
   }
 }
 
+// Get courses for current teacher (courses assigned to teacher)
+const GetTeacherCourses = async (req, res) => {
+  try {
+    const teacherId = res.locals.payload.id
+    const userRole = res.locals.payload.role
+
+    // Only teachers can access this endpoint
+    if (userRole !== 'teacher') {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. Teachers only.' })
+    }
+
+    // Find courses where the teacher is assigned
+    const courses = await Course.find({
+      teachers: teacherId,
+      isActive: true
+    })
+      .populate('teachers', 'name email')
+      .populate('batches', 'name')
+      .sort({ name: 1 })
+
+    res.json(courses)
+  } catch (error) {
+    console.error('Error fetching teacher courses:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch teacher courses.' })
+  }
+}
+
 // Get specific course details for student
 const GetStudentCourseDetails = async (req, res) => {
   try {
@@ -188,6 +215,38 @@ const GetStudentCourseDetails = async (req, res) => {
   }
 }
 
+// Get specific course details for teacher
+const GetTeacherCourseDetails = async (req, res) => {
+  try {
+    const teacherId = res.locals.payload.id
+    const userRole = res.locals.payload.role
+    const courseId = req.params.id
+
+    // Only teachers can access this endpoint
+    if (userRole !== 'teacher') {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. Teachers only.' })
+    }
+
+    // Check if teacher is assigned to this course
+    const course = await Course.findOne({
+      _id: courseId,
+      teachers: teacherId,
+      isActive: true
+    })
+      .populate('teachers', 'name email')
+      .populate('batches', 'name')
+
+    if (!course) {
+      return res.status(404).json({ status: 'Error', msg: 'Course not found or you are not assigned to this course.' })
+    }
+
+    res.json(course)
+  } catch (error) {
+    console.error('Error fetching teacher course details:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch course details.' })
+  }
+}
+
 module.exports = {
   GetAllCourses,
   GetCourseById,
@@ -195,5 +254,7 @@ module.exports = {
   UpdateCourse,
   DeleteCourse,
   GetStudentCourses,
-  GetStudentCourseDetails
+  GetStudentCourseDetails,
+  GetTeacherCourses,
+  GetTeacherCourseDetails
 }
