@@ -45,4 +45,28 @@ router.delete(
   controller.DeleteAssignment
 )
 
+// Get assignments for current student
+router.get(
+  '/student/my-assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentAssignments
+)
+
+// Get specific assignment details for student
+router.get(
+  '/student/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentAssignmentDetails
+)
+
+// Get assignments for current teacher
+router.get(
+  '/teacher/my-assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetTeacherAssignments
+)
+
 module.exports = router

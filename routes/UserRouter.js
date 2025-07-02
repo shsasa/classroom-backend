@@ -287,6 +287,14 @@ router.patch(
   controller.ChangeUserStatus
 )
 
+// Update own profile (authenticated users)
+router.put(
+  '/profile',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.UpdateProfile
+)
+
 // Public routes for password reset (no authentication required)
 router.post('/forgot-password', controller.RequestPasswordReset)
 router.get('/reset-password/verify', controller.VerifyPasswordResetToken)

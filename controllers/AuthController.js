@@ -295,6 +295,104 @@ const ActivateAccount = async (req, res) => {
   }
 }
 
+// Verify reset token (check if token is valid)
+const VerifyResetToken = async (req, res) => {
+  try {
+    const { token } = req.query
+
+    console.log('🔍 VerifyResetToken called with token:', token ? token.substring(0, 8) + '...' : 'No token')
+
+    if (!token) {
+      return res.status(400).json({ status: 'Error', msg: 'Token is required.' })
+    }
+
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpires: { $gt: new Date() }
+    }).select('name email resetToken resetTokenExpires')
+
+    console.log('🔍 Current time:', new Date())
+
+    if (!user) {
+      console.log('❌ No user found with valid token')
+      // Check if user exists with this token but expired
+      const expiredUser = await User.findOne({ resetToken: token }).select('resetTokenExpires')
+      if (expiredUser) {
+        console.log('⏰ Token found but expired. Expires at:', expiredUser.resetTokenExpires)
+      } else {
+        console.log('🚫 Token not found in database at all')
+      }
+      return res.status(400).json({ status: 'Error', msg: 'Invalid or expired token.' })
+    }
+
+    console.log('✅ Valid token found for user:', user.email)
+    console.log('⏰ Token expires at:', user.resetTokenExpires)
+
+    res.json({
+      status: 'Success',
+      msg: 'Token is valid.',
+      user: {
+        name: user.name,
+        email: user.email
+      }
+    })
+  } catch (error) {
+    console.error('Error verifying reset token:', error)
+    res.status(500).json({ status: 'Error', msg: 'Token verification failed.' })
+  }
+}
+
+// Request password reset (for users who forgot their password)
+const RequestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    console.log('🔐 Password reset requested for email:', email)
+
+    if (!email) {
+      return res.status(400).json({ status: 'Error', msg: 'Email is required.' })
+    }
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      console.log('❌ User not found with email:', email)
+      // Don't reveal if email exists or not for security
+      return res.json({ status: 'Success', msg: 'If an account with that email exists, we\'ve sent you a password reset link.' })
+    }
+
+    // Generate new reset token
+    const resetToken = crypto.randomBytes(32).toString('hex')
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    console.log('🔑 Generated new reset token for user:', user.email)
+    console.log('⏰ Token will expire at:', resetTokenExpires)
+    console.log('🔑 Token (first 8 chars):', resetToken.substring(0, 8) + '...')
+
+    user.resetToken = resetToken
+    user.resetTokenExpires = resetTokenExpires
+    await user.save()
+
+    console.log('💾 Token saved to database successfully')
+
+    // Send email to user with resetToken link for password reset
+    try {
+      await emailService.sendPasswordResetEmail(user, resetToken)
+      console.log(`📧 Password reset email sent to ${user.email}`)
+    } catch (emailError) {
+      console.error('❌ Failed to send reset email:', emailError)
+      // Don't fail the request if email fails, but log it
+    }
+
+    res.json({
+      status: 'Success',
+      msg: 'If an account with that email exists, we\'ve sent you a password reset link.'
+    })
+  } catch (error) {
+    console.error('Error in RequestPasswordReset:', error)
+    res.status(500).json({ status: 'Error', msg: 'Password reset request failed.' })
+  }
+}
+
 module.exports = {
   Login,
   AddUser,
@@ -303,5 +401,7 @@ module.exports = {
   UpdatePassword,
   GenerateResetToken,
   ResetPassword,
-  ActivateAccount
+  ActivateAccount,
+  VerifyResetToken,
+  RequestPasswordReset
 }

@@ -45,4 +45,20 @@ router.delete(
   controller.DeleteCourse
 )
 
+// Get courses for current student
+router.get(
+  '/student/my-courses',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentCourses
+)
+
+// Get specific course details for student
+router.get(
+  '/student/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentCourseDetails
+)
+
 module.exports = router

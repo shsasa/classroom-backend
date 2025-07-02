@@ -14,6 +14,12 @@ router.post('/set-password', controller.SetPassword)
 // Reset password (request reset token)
 router.post('/reset-password', controller.ResetPassword)
 
+// Request password reset (for users who forgot password)
+router.post('/request-password-reset', controller.RequestPasswordReset)
+
+// Verify reset token
+router.get('/verify-reset-token', controller.VerifyResetToken)
+
 // Check session
 router.get(
   '/session',

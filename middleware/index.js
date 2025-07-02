@@ -231,6 +231,26 @@ const isAdminOrSupervisor = (req, res, next) => {
   })
 }
 
+const isTeacherOrAbove = (req, res, next) => {
+  const { payload } = res.locals
+
+  if (!payload) {
+    return res.status(401).json({
+      status: 'Error',
+      msg: 'No user payload found'
+    })
+  }
+
+  if (payload.role === 'admin' || payload.role === 'supervisor' || payload.role === 'teacher') {
+    return next()
+  }
+
+  return res.status(403).json({
+    status: 'Error',
+    msg: 'Access denied. Teacher privileges or above required.'
+  })
+}
+
 module.exports = {
   hashPassword,
   comparePassword,
@@ -241,5 +261,6 @@ module.exports = {
   hasRole,
   isOwnerOrAdmin,
   isAdminOrSupervisor,
+  isTeacherOrAbove,
   multer
 }

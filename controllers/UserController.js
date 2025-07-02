@@ -374,6 +374,47 @@ const ResetPassword = async (req, res) => {
   }
 }
 
+// Update own profile (logged-in user)
+const UpdateProfile = async (req, res) => {
+  try {
+    const userId = res.locals.payload.id
+    const { name, email } = req.body
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ status: 'Error', msg: 'User not found.' })
+    }
+
+    // Check if email is already taken by another user
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } })
+      if (existingUser) {
+        return res.status(400).json({ status: 'Error', msg: 'Email is already taken by another user.' })
+      }
+    }
+
+    if (name) user.name = name
+    if (email) user.email = email
+
+    await user.save()
+
+    // Return user without sensitive data
+    const userResponse = user.toObject()
+    delete userResponse.passwordDigest
+    delete userResponse.resetToken
+    delete userResponse.resetTokenExpires
+
+    res.json({
+      status: 'Success',
+      msg: 'Profile updated successfully.',
+      user: userResponse
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to update profile.' })
+  }
+}
+
 module.exports = {
   GetAllUsers,
   GetUserById,
@@ -385,5 +426,6 @@ module.exports = {
   GetUserResetToken,
   RequestPasswordReset,
   VerifyPasswordResetToken,
-  ResetPassword
+  ResetPassword,
+  UpdateProfile
 }

@@ -47,13 +47,13 @@ router.delete(
   controller.DeleteBatch
 )
 
-// Add student to batch
+// Add multiple students to batch
 router.post(
   '/:id/students',
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.addStudentToBatch
+  controller.AddStudentsToBatch
 )
 
 // Remove student from batch
@@ -62,7 +62,85 @@ router.delete(
   middleware.stripToken,
   middleware.verifyToken,
   middleware.isAdminOrSupervisor,
-  controller.removeStudentFromBatch
+  controller.RemoveStudentFromBatch
+)
+
+// Add teacher to batch
+router.post(
+  '/:id/teachers/:teacherId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.AddTeacherToBatch
+)
+
+// Add multiple teachers to batch
+router.post(
+  '/:id/teachers',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.AddTeachersToBatch
+)
+
+// Remove teacher from batch
+router.delete(
+  '/:id/teachers/:teacherId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.RemoveTeacherFromBatch
+)
+
+// Add multiple courses to batch
+router.post(
+  '/:id/courses',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.AddCoursesToBatch
+)
+
+// Remove course from batch
+router.delete(
+  '/:id/courses/:courseId',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isAdminOrSupervisor,
+  controller.RemoveCourseFromBatch
+)
+
+// Get assignments for batch
+router.get(
+  '/:id/assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetBatchAssignments
+)
+
+// Create assignment for batch
+router.post(
+  '/:id/assignments',
+  middleware.stripToken,
+  middleware.verifyToken,
+  middleware.isTeacherOrAbove,
+  controller.CreateBatchAssignment
+)
+
+// Get batches for current student
+router.get(
+  '/student/my-batches',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentBatches
+)
+
+// Get specific batch details for student
+router.get(
+  '/student/:id',
+  middleware.stripToken,
+  middleware.verifyToken,
+  controller.GetStudentBatchDetails
 )
 
 module.exports = router

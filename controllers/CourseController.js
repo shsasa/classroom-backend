@@ -94,10 +94,106 @@ const DeleteCourse = async (req, res) => {
   }
 }
 
+// Get courses for current student (courses from student's batches)
+const GetStudentCourses = async (req, res) => {
+  try {
+    const studentId = res.locals.payload.id
+    const userRole = res.locals.payload.role
+
+    // Only students can access this endpoint
+    if (userRole !== 'student') {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. Students only.' })
+    }
+
+    // Find batches that the student is enrolled in
+    const { Batch } = require('../models')
+    const studentBatches = await Batch.find({
+      students: studentId,
+      isActive: true
+    }).select('courses')
+
+    // Extract course IDs from batches
+    const courseIds = []
+    studentBatches.forEach(batch => {
+      batch.courses.forEach(courseId => {
+        if (!courseIds.includes(courseId.toString())) {
+          courseIds.push(courseId)
+        }
+      })
+    })
+
+    // Get the actual courses
+    const courses = await Course.find({
+      _id: { $in: courseIds },
+      isActive: true
+    })
+      .populate('teachers', 'name email')
+      .select('name description teachers createdAt')
+      .sort({ name: 1 })
+
+    res.json(courses)
+  } catch (error) {
+    console.error('Error fetching student courses:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch student courses.' })
+  }
+}
+
+// Get specific course details for student
+const GetStudentCourseDetails = async (req, res) => {
+  try {
+    const studentId = res.locals.payload.id
+    const userRole = res.locals.payload.role
+    const courseId = req.params.id
+
+    // Only students can access this endpoint
+    if (userRole !== 'student') {
+      return res.status(403).json({ status: 'Error', msg: 'Access denied. Students only.' })
+    }
+
+    // Check if student has access to this course through their batches
+    const { Batch } = require('../models')
+    const studentBatches = await Batch.find({
+      students: studentId,
+      courses: courseId,
+      isActive: true
+    })
+
+    if (studentBatches.length === 0) {
+      return res.status(404).json({ status: 'Error', msg: 'Course not found or you are not enrolled in any batch with this course.' })
+    }
+
+    const course = await Course.findOne({
+      _id: courseId,
+      isActive: true
+    })
+      .populate('teachers', 'name email')
+
+    if (!course) {
+      return res.status(404).json({ status: 'Error', msg: 'Course not found.' })
+    }
+
+    // Add batch information
+    const courseWithBatches = {
+      ...course.toObject(),
+      enrolledBatches: studentBatches.map(batch => ({
+        _id: batch._id,
+        name: batch.name
+      }))
+    }
+
+    res.json(courseWithBatches)
+  } catch (error) {
+    console.error('Error fetching student course details:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch course details.' })
+  }
+}
+
 module.exports = {
   GetAllCourses,
   GetCourseById,
   CreateCourse,
   UpdateCourse,
-  DeleteCourse
+  DeleteCourse,
+  GetStudentCourses,
+  GetStudentCourseDetails
 }
