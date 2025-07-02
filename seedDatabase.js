@@ -228,50 +228,68 @@ async function seedCourses(users) {
   const courses = [
     {
       name: 'Advanced Mathematics',
-      description: 'High school mathematics course covering algebra, geometry, and statistics',
-      teachers: [teachers[0]._id], // Dr. Khaled
+      description: 'High school mathematics course covering algebra, geometry, calculus, and statistics',
+      teachers: [teachers[0]._id], // Dr. Khaled Ahmed
       isActive: true,
-      attachments: ['math_syllabus.pdf', 'calculator_guide.pdf']
+      attachments: ['math_syllabus.pdf', 'calculator_guide.pdf', 'formula_sheet.pdf']
     },
     {
       name: 'General Science',
-      description: 'Natural sciences course including biology, chemistry, and physics',
-      teachers: [teachers[1]._id], // Sarah
+      description: 'Natural sciences course including biology, chemistry, and physics fundamentals',
+      teachers: [teachers[1]._id], // Sarah Mohamed
       isActive: true,
-      attachments: ['science_lab_rules.pdf']
+      attachments: ['science_lab_rules.pdf', 'periodic_table.pdf']
     },
     {
       name: 'Applied Physics',
       description: 'Physics study with practical applications and laboratory experiments',
-      teachers: [teachers[2]._id], // Youssef
+      teachers: [teachers[2]._id], // Youssef Ali
       isActive: true,
-      attachments: ['physics_experiments.pdf', 'lab_safety.pdf']
+      attachments: ['physics_experiments.pdf', 'lab_safety.pdf', 'physics_formulas.pdf']
     },
     {
       name: 'Organic Chemistry',
-      description: 'Study of organic compounds and chemical reactions',
-      teachers: [teachers[3]._id], // Dr. Mariam
+      description: 'Study of organic compounds, chemical reactions, and laboratory techniques',
+      teachers: [teachers[3]._id], // Dr. Mariam Khaled
       isActive: true,
-      attachments: ['chemistry_formulas.pdf']
+      attachments: ['chemistry_formulas.pdf', 'lab_procedures.pdf']
     },
     {
       name: 'English Language',
-      description: 'English language learning - reading, writing, and conversation',
-      teachers: [teachers[4]._id], // Abdullah
+      description: 'English language learning - reading, writing, grammar, and conversation',
+      teachers: [teachers[4]._id], // Abdullah Hassan
       isActive: true,
-      attachments: ['english_grammar.pdf', 'vocabulary_list.pdf']
+      attachments: ['english_grammar.pdf', 'vocabulary_list.pdf', 'writing_guide.pdf']
     },
     {
       name: 'Computer Programming',
-      description: 'Introduction to programming using Python and JavaScript',
-      teachers: [teachers[0]._id, teachers[1]._id], // Multiple teachers
+      description: 'Introduction to programming using Python, JavaScript, and web development',
+      teachers: [teachers[0]._id, teachers[1]._id], // Dr. Khaled + Sarah (multiple teachers)
       isActive: true,
-      attachments: ['python_basics.pdf', 'coding_exercises.zip']
+      attachments: ['python_basics.pdf', 'javascript_guide.pdf', 'coding_exercises.zip', 'project_templates.zip']
+    },
+    {
+      name: 'Database Systems',
+      description: 'Database design, SQL, and data management principles',
+      teachers: [teachers[0]._id], // Dr. Khaled Ahmed (additional course for him)
+      isActive: true,
+      attachments: ['sql_reference.pdf', 'database_design.pdf']
     }
   ]
 
   const createdCourses = await Course.insertMany(courses)
   console.log(`✅ Created ${createdCourses.length} courses`)
+
+  // Log teacher-course relationships
+  console.log('🔗 Teacher-Course Relationships:')
+  createdCourses.forEach((course, index) => {
+    const teacherNames = course.teachers.map(teacherId => {
+      const teacher = teachers.find(t => t._id.toString() === teacherId.toString())
+      return teacher ? teacher.name : 'Unknown'
+    })
+    console.log(`   ${course.name}: ${teacherNames.join(', ')}`)
+  })
+
   return createdCourses
 }
 
@@ -283,16 +301,17 @@ async function seedBatches(users, courses) {
   const teachers = users.filter(u => u.role === 'teacher')
   const supervisors = users.filter(u => u.role === 'supervisor')
 
+  // Important: We'll specifically assign Dr. Khaled Ahmed (teachers[0]) to ensure test access
   const batches = [
     {
-      name: 'First Batch 2025',
-      description: 'High school students - First semester',
+      name: 'Math & Science Batch 2025',
+      description: 'Advanced Mathematics and Science courses for high school students',
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-06-30'),
-      students: students.slice(0, 5).map(s => s._id),
-      supervisors: [supervisors[0]._id],
-      teachers: teachers.slice(0, 3).map(t => t._id),
-      courses: courses.slice(0, 3).map(c => c._id),
+      students: students.slice(0, 6).map(s => s._id), // First 6 students
+      supervisors: [supervisors[0]._id], // Mohamed Salem
+      teachers: [teachers[0]._id, teachers[1]._id], // Dr. Khaled (Math) + Sarah (Science)
+      courses: [courses[0]._id, courses[1]._id], // Math + Science courses
       isActive: true,
       schedule: [
         {
@@ -316,14 +335,14 @@ async function seedBatches(users, courses) {
       ]
     },
     {
-      name: 'Second Batch 2025',
-      description: 'High school students - Second semester',
+      name: 'Physics & Chemistry Batch 2025',
+      description: 'Physics and Chemistry intensive course',
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-07-31'),
-      students: students.slice(5, 10).map(s => s._id),
-      supervisors: [supervisors[1]._id],
-      teachers: teachers.slice(2, 5).map(t => t._id),
-      courses: courses.slice(2, 5).map(c => c._id),
+      students: students.slice(4, 10).map(s => s._id), // Students 4-9
+      supervisors: [supervisors[1]._id], // Nora Hassan
+      teachers: [teachers[2]._id, teachers[3]._id], // Youssef (Physics) + Mariam (Chemistry)
+      courses: [courses[2]._id, courses[3]._id], // Physics + Chemistry courses
       isActive: true,
       schedule: [
         {
@@ -347,14 +366,14 @@ async function seedBatches(users, courses) {
       ]
     },
     {
-      name: 'Advanced Programming Batch',
-      description: 'Intensive programming and development course',
+      name: 'Advanced Programming Batch 2025',
+      description: 'Intensive programming and development course with multiple teachers',
       startDate: new Date('2025-03-01'),
       endDate: new Date('2025-08-31'),
-      students: students.slice(0, 8).map(s => s._id),
-      supervisors: supervisors.map(s => s._id),
-      teachers: [teachers[0]._id, teachers[1]._id],
-      courses: [courses[5]._id], // Programming course
+      students: students.slice(0, 8).map(s => s._id), // First 8 students
+      supervisors: supervisors.map(s => s._id), // Both supervisors
+      teachers: [teachers[0]._id, teachers[1]._id, teachers[4]._id], // Dr. Khaled + Sarah + Abdullah
+      courses: [courses[5]._id, courses[4]._id], // Programming + English courses
       isActive: true,
       schedule: [
         {
@@ -370,11 +389,46 @@ async function seedBatches(users, courses) {
           room: 'Computer Lab'
         }
       ]
+    },
+    {
+      name: 'English Language Intensive 2025',
+      description: 'Focused English language improvement course',
+      startDate: new Date('2025-01-15'),
+      endDate: new Date('2025-05-15'),
+      students: students.slice(2, 8).map(s => s._id), // Students 2-7
+      supervisors: [supervisors[0]._id],
+      teachers: [teachers[4]._id], // Abdullah (English Teacher)
+      courses: [courses[4]._id], // English course
+      isActive: true,
+      schedule: [
+        {
+          day: 'Tuesday',
+          startTime: '14:00',
+          endTime: '16:00',
+          room: 'Room C1'
+        },
+        {
+          day: 'Thursday',
+          startTime: '14:00',
+          endTime: '16:00',
+          room: 'Room C1'
+        }
+      ]
     }
   ]
 
   const createdBatches = await Batch.insertMany(batches)
   console.log(`✅ Created ${createdBatches.length} batches`)
+
+  // Log the relationships for debugging
+  console.log('🔗 Batch-Teacher Relationships:')
+  createdBatches.forEach((batch, index) => {
+    console.log(`   ${batch.name}:`)
+    console.log(`     Teachers: ${batch.teachers.length} assigned`)
+    console.log(`     Students: ${batch.students.length} enrolled`)
+    console.log(`     Courses: ${batch.courses.length} attached`)
+  })
+
   return createdBatches
 }
 
@@ -737,6 +791,35 @@ async function seedDatabase() {
     console.log('   Supervisor: supervisor@school.com / super123')
     console.log('   Teacher: khaled.math@school.com / teacher123')
     console.log('   Student: ali.student@school.com / student123')
+
+    // Print testing information
+    console.log('\n🧪 Testing Information:')
+    const khaledTeacher = users.find(u => u.email === 'khaled.math@school.com')
+    const mathBatches = batches.filter(b => b.teachers.includes(khaledTeacher._id))
+
+    console.log(`   Dr. Khaled Ahmed (Teacher ID: ${khaledTeacher._id})`)
+    console.log(`   Has access to ${mathBatches.length} batches:`)
+    mathBatches.forEach(batch => {
+      console.log(`     - ${batch.name} (ID: ${batch._id})`)
+    })
+
+    // Also check course-based access
+    const khaledCourses = courses.filter(c => c.teachers.includes(khaledTeacher._id))
+    const courseBasedBatches = batches.filter(b =>
+      b.courses.some(courseId =>
+        khaledCourses.some(course => course._id.toString() === courseId.toString())
+      )
+    )
+
+    console.log(`   Dr. Khaled teaches ${khaledCourses.length} courses:`)
+    khaledCourses.forEach(course => {
+      console.log(`     - ${course.name} (ID: ${course._id})`)
+    })
+
+    console.log(`   Course-based batch access: ${courseBasedBatches.length} batches`)
+    courseBasedBatches.forEach(batch => {
+      console.log(`     - ${batch.name} (ID: ${batch._id})`)
+    })
 
   } catch (error) {
     console.error('❌ Error seeding database:', error)
