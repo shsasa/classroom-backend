@@ -685,9 +685,15 @@ const GetTeacherBatches = async (req, res) => {
 // Get batch details for teacher (if teacher has access to it)
 const GetTeacherBatchDetails = async (req, res) => {
   try {
+    console.log('🔍 GetTeacherBatchDetails called')
+    console.log('📋 res.locals.payload:', res.locals.payload)
+    console.log('📋 req.params:', req.params)
+
     const teacherId = res.locals.payload.id
     const batchId = req.params.id
-    const { Course } = require('../models')
+
+    console.log('👨‍🏫 Teacher ID:', teacherId)
+    console.log('📚 Batch ID:', batchId)
 
     // Find the batch
     const batch = await Batch.findById(batchId)
@@ -696,31 +702,52 @@ const GetTeacherBatchDetails = async (req, res) => {
       .populate('supervisors', 'name email')
       .populate('courses', 'name description')
 
+    console.log('📚 Batch found:', batch ? 'Yes' : 'No')
+
     if (!batch) {
+      console.log('❌ Batch not found')
       return res.status(404).json({ status: 'Error', msg: 'Batch not found.' })
     }
+
+    console.log('👥 Batch teachers:', batch.teachers.map(t => t._id.toString()))
+    console.log('👨‍💼 Batch supervisors:', batch.supervisors.map(s => s._id.toString()))
 
     // Check if teacher has access to this batch
     const hasAccess =
       batch.teachers.some(teacher => teacher._id.toString() === teacherId) ||
       batch.supervisors.some(supervisor => supervisor._id.toString() === teacherId)
 
+    console.log('🔓 Direct access (teacher/supervisor):', hasAccess)
+
     // Also check if teacher teaches any courses in this batch
     if (!hasAccess) {
+      console.log('🔍 Checking course access...')
       const teacherCourses = await Course.find({ teachers: teacherId })
+      console.log('📚 Teacher courses:', teacherCourses.map(c => c._id.toString()))
+
       const teacherCourseIds = teacherCourses.map(course => course._id.toString())
       const batchCourseIds = batch.courses.map(course => course._id.toString())
 
-      hasAccess = teacherCourseIds.some(courseId => batchCourseIds.includes(courseId))
+      console.log('📚 Batch course IDs:', batchCourseIds)
+      console.log('📚 Teacher course IDs:', teacherCourseIds)
+
+      const courseAccessCheck = teacherCourseIds.some(courseId => batchCourseIds.includes(courseId))
+      console.log('🔓 Course access:', courseAccessCheck)
+
+      hasAccess = courseAccessCheck
     }
 
+    console.log('🔓 Final access decision:', hasAccess)
+
     if (!hasAccess) {
+      console.log('❌ Access denied')
       return res.status(403).json({ status: 'Error', msg: 'Access denied. You do not have permission to view this batch.' })
     }
 
+    console.log('✅ Access granted, returning batch data')
     res.json(batch)
   } catch (error) {
-    console.error('Error fetching teacher batch details:', error)
+    console.error('💥 Error fetching teacher batch details:', error)
     res.status(500).json({ status: 'Error', msg: 'Failed to fetch batch details.' })
   }
 }
