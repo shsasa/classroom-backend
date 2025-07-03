@@ -8,7 +8,7 @@ const assignmentSchema = new Schema(
     course: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
     teacher: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     dueDate: { type: Date, required: true },
-    attachments: [{ type: String }], // file paths or URLs
+    attachments: [{ type: String }], 
     isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
