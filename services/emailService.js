@@ -3,14 +3,7 @@ const nodemailer = require('nodemailer');
 class EmailService {
   constructor() {
     // Debug: Log the environment variables for email configuration
-    console.log('Email Configuration Debug:');
-    console.log('EMAIL_HOST:', process.env.EMAIL_HOST);
-    console.log('EMAIL_PORT:', process.env.EMAIL_PORT);
-    console.log('EMAIL_SECURE:', process.env.EMAIL_SECURE);
-    console.log('EMAIL_USER:', process.env.EMAIL_USER);
-    console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? `[Length: ${process.env.EMAIL_PASS.length}]` : 'NOT SET');
-    console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
-    console.log('EMAIL_FROM_NAME:', process.env.EMAIL_FROM_NAME);
+
 
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
@@ -50,7 +43,7 @@ class EmailService {
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', result.messageId);
+      // Email sent successfully
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -205,7 +198,7 @@ class EmailService {
   async testConnection() {
     try {
       await this.transporter.verify();
-      console.log('SMTP connection verified successfully');
+      // SMTP connection verified successfully
       return { success: true, message: 'SMTP connection verified' };
     } catch (error) {
       console.error('SMTP connection failed:', error);

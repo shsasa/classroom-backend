@@ -17,6 +17,39 @@ const GetAllSubmissions = async (req, res) => {
   }
 }
 
+// Get submissions by assignment ID
+const GetSubmissionsByAssignment = async (req, res) => {
+  try {
+    const { assignmentId } = req.params
+
+    const submissions = await Submission.find({ assignment: assignmentId })
+      .populate('student', 'firstName lastName email')
+      .sort({ submittedAt: -1 })
+
+    // Transform data to match frontend expectations
+    const transformedSubmissions = submissions.map(submission => {
+      const submissionObj = submission.toObject()
+      // Map content to submissionText
+      submissionObj.submissionText = submission.content
+      // Map attachments to files with proper structure
+      submissionObj.files = submission.attachments ? submission.attachments.map(attachment => {
+        return {
+          filename: attachment,
+          originalName: attachment.split('/').pop(),
+          url: `/uploads/${attachment}`
+        }
+      }) : []
+
+      return submissionObj
+    })
+
+    res.json(transformedSubmissions)
+  } catch (error) {
+    console.error('Error fetching submissions by assignment:', error)
+    res.status(500).json({ status: 'Error', msg: 'Failed to fetch submissions for this assignment.' })
+  }
+}
+
 // Get submission by ID
 const GetSubmissionById = async (req, res) => {
   try {
@@ -130,8 +163,10 @@ const SubmitAssignment = async (req, res) => {
     const submission = await Submission.create({
       assignment: assignmentId,
       student: studentId,
-      content,
+      content: content || '',
+      submissionText: content || '', // Add this for frontend compatibility
       attachments: attachments || [],
+      files: attachments || [], // Add this for frontend compatibility
       isLate,
       submittedAt: now
     })
@@ -257,5 +292,6 @@ module.exports = {
   SubmitAssignment,
   UpdateStudentSubmission,
   GetStudentSubmission,
-  GetStudentSubmissions
+  GetStudentSubmissions,
+  GetSubmissionsByAssignment
 }

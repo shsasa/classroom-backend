@@ -64,13 +64,7 @@ router.post(
     const nodemailer = require('nodemailer')
 
     try {
-      console.log('=== EMAIL DEBUG INFO ===')
-      console.log('HOST:', process.env.EMAIL_HOST)
-      console.log('PORT:', process.env.EMAIL_PORT)
-      console.log('SECURE:', process.env.EMAIL_SECURE)
-      console.log('USER:', process.env.EMAIL_USER)
-      console.log('PASS LENGTH:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0)
-      console.log('PASS FIRST 3 CHARS:', process.env.EMAIL_PASS ? process.env.EMAIL_PASS.substring(0, 3) + '...' : 'NOT SET')
+      // Email debug info has been removed
 
       // Test different port configurations
       const configs = [
@@ -83,7 +77,7 @@ router.post(
 
       for (const config of configs) {
         try {
-          console.log(`\n=== Testing ${config.name} ===`)
+          // Testing email config
 
           const transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
@@ -104,11 +98,11 @@ router.post(
 
           await transporter.verify()
           results.push({ ...config, success: true, error: null })
-          console.log(`✅ ${config.name} - SUCCESS`)
+          // Config test succeeded
 
         } catch (error) {
           results.push({ ...config, success: false, error: error.message })
-          console.log(`❌ ${config.name} - FAILED:`, error.message)
+          // Config test failed
         }
       }
 
@@ -149,12 +143,7 @@ router.post(
         })
       }
 
-      console.log('=== TESTING CUSTOM SETTINGS ===')
-      console.log('Host:', host)
-      console.log('Port:', port)
-      console.log('Secure:', secure)
-      console.log('User:', user)
-      console.log('Pass length:', pass.length)
+      // Testing custom email settings
 
       const transporter = nodemailer.createTransport({
         host: host,
